@@ -13,7 +13,7 @@
 DP_VER="4.0"
 DP_URL_DEFAULT="https://raw.githubusercontent.com/mogamingcv7v-netizen/DARK_PS/main"
 DP_URL="${DARKPS_URL:-$DP_URL_DEFAULT}"
-DP_SHA="bf68adefaa74c54727c53c84a5fecf793ce7c6878a94eb21bb8185a05022e6f6"
+DP_SHA="d6de4c82c8df9c4c076ceaba70532305fcb840323b0e6b3ce01b4378e4ef813d"
 # agent must NOT live in ~/.darkps — main.py wipes that path on boot.
 # XDG-style install root survives; ~/.darkps stays the agent's own data dir.
 DP_BASE="$HOME/.local/share/darkps"
@@ -24,6 +24,8 @@ DP_LOG="$DP_BASE/install.log"
 # ── platform ──────────────────────────────────────────────────────────
 DP_TERMUX=0
 case "${TERMUX_VERSION:-}" in ?*) DP_TERMUX=1 ;; esac
+DP_WIN=0
+case "$(uname -s 2>/dev/null)" in MINGW*|MSYS*|CYGWIN*) DP_WIN=1 ;; esac
 if [ "$DP_TERMUX" = 1 ]; then
     DP_BIN_DIR="${TERMUX_PREFIX:-/data/data/com.termux/files/usr}/bin"
 else
@@ -281,7 +283,23 @@ dp_launcher() {
     mkdir -p "$DP_BIN_DIR"
     cp "$DP_AGENT/bin/darkps" "$DP_BIN_DIR/darkps" || fail "launcher copy failed"
     chmod +x "$DP_BIN_DIR/darkps" 2>/dev/null
-    ok "launcher"
+    # Windows CMD/PowerShell wrapper so `darkps` works outside Git Bash too
+    if [ "$DP_WIN" = 1 ]; then
+        {
+            printf '@echo off\n'
+            printf '"C:\\Program Files\\Git\\bin\\bash.exe" "%%~dp0darkps" %%*\n'
+        } > "$DP_BIN_DIR/darkps.cmd" 2>/dev/null \
+            && ok "launcher (bash + CMD wrapper darkps.cmd)" || ok "launcher"
+        winbin="$(cygpath -w "$DP_BIN_DIR" 2>/dev/null || true)"
+        if [ -n "$winbin" ] && command -v powershell.exe >/dev/null 2>&1; then
+            ps_cmd='$d="'"$winbin"'"; $p=[Environment]::GetEnvironmentVariable("Path","User"); if (($p -split ";") -notcontains $d) { [Environment]::SetEnvironmentVariable("Path", ($p + ";" + $d), "User") }'
+            powershell.exe -NoProfile -Command "$ps_cmd" >/dev/null 2>&1 || true
+        fi
+        printf '  %s windows PATH %s\n' "$DP_TICK" \
+            "${DP_DIM}$winbin (use a new CMD/PowerShell window)${DP_R}"
+    else
+        ok "launcher"
+    fi
 
     case ":$PATH:" in
         *":$DP_BIN_DIR:"*) return 0 ;;
