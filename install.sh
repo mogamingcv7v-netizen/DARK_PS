@@ -13,7 +13,7 @@
 DP_VER="4.0"
 DP_URL_DEFAULT="https://raw.githubusercontent.com/mogamingcv7v-netizen/DARK_PS/main"
 DP_URL="${DARKPS_URL:-$DP_URL_DEFAULT}"
-DP_SHA="d6de4c82c8df9c4c076ceaba70532305fcb840323b0e6b3ce01b4378e4ef813d"
+DP_SHA="a94f0fe1714330524ede1a5470ca67082afeeee6e0c44b866b836f0397a14145"
 # agent must NOT live in ~/.darkps — main.py wipes that path on boot.
 # XDG-style install root survives; ~/.darkps stays the agent's own data dir.
 DP_BASE="$HOME/.local/share/darkps"
